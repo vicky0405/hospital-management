@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,6 +67,7 @@ class AppointmentServiceTest {
                 assertThat(result.getPatientId()).isEqualTo(patientId);
                 assertThat(result.getDoctorId()).isEqualTo(doctorId);
                 assertThat(result.getSlot()).isEqualTo(futureSlot);
+                verify(appointmentRepository).existsByDoctorIdAndSlot(doctorId, futureSlot);
                 verify(appointmentRepository).save(any(Appointment.class));
         }
 
@@ -78,6 +80,7 @@ class AppointmentServiceTest {
                 // when / then
                 assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, futureSlot))
                                 .isInstanceOf(SlotAlreadyBookedException.class);
+                verify(appointmentRepository, never()).save(any());
         }
 
         @Test
