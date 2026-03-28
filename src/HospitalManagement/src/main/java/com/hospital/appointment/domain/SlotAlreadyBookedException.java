@@ -1,8 +1,10 @@
 package com.hospital.appointment.domain;
 
-public class SlotAlreadyBookedException extends RuntimeException {
+import java.time.LocalDateTime;
+import java.util.UUID;
 
-    public SlotAlreadyBookedException(String message) {
-        super(message);
+public class SlotAlreadyBookedException extends RuntimeException {
+    public SlotAlreadyBookedException(UUID doctorId, LocalDateTime slot) {
+        super("Slot already booked for doctor " + doctorId + " at " + slot);
     }
 }

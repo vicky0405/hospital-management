@@ -13,9 +13,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Appointment {
-
     private UUID id;
     private UUID patientId;
     private UUID doctorId;
     private LocalDateTime slot;
+    private AppointmentStatus status;
+    private LocalDateTime createdAt;
+    private Integer version;
 }
