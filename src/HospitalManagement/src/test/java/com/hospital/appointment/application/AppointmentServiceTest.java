@@ -89,4 +89,12 @@ class AppointmentServiceTest {
                 assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, pastSlot))
                                 .isInstanceOf(SlotInPastException.class);
         }
+
+        @Test
+        void bookAppointment_shouldThrowException_whenSlotIsToday_butAlreadyPassed() {
+                LocalDateTime pastSlotToday = LocalDateTime.now().minusHours(1);
+
+                assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, pastSlotToday))
+                                .isInstanceOf(SlotInPastException.class);
+        }
 }
