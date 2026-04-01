@@ -10,8 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.hospital.appointment.application.AppointmentService;
 import com.hospital.appointment.domain.Appointment;
 import com.hospital.appointment.domain.AppointmentRepository;
+import com.hospital.appointment.domain.AppointmentStatus;
 import com.hospital.appointment.domain.SlotAlreadyBookedException;
-import com.hospital.appointment.domain.SlotInPastException;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -34,70 +34,53 @@ class AppointmentServiceTest {
 
         private UUID patientId;
         private UUID doctorId;
-        private LocalDateTime futureSlot;
+        private UUID scheduleId;
 
         @BeforeEach
         void setUp() {
                 patientId = UUID.randomUUID();
                 doctorId = UUID.randomUUID();
-                futureSlot = LocalDateTime.now().plusDays(1);
+                scheduleId = UUID.randomUUID();
         }
 
         @Test
         void bookAppointment_shouldSuccess_whenSlotAvailable() {
                 // given
-                given(appointmentRepository.existsByDoctorIdAndSlot(doctorId, futureSlot))
+                given(appointmentRepository.existsByDoctorIdAndScheduleId(doctorId, scheduleId))
                                 .willReturn(false);
 
                 Appointment expected = Appointment.builder()
                                 .id(UUID.randomUUID())
                                 .patientId(patientId)
                                 .doctorId(doctorId)
-                                .slot(futureSlot)
+                                .scheduleId(scheduleId)
+                                .status(AppointmentStatus.PENDING)
                                 .build();
 
                 given(appointmentRepository.save(any(Appointment.class)))
                                 .willReturn(expected);
 
                 // when
-                Appointment result = appointmentService.bookAppointment(patientId, doctorId, futureSlot);
+                Appointment result = appointmentService.bookAppointment(patientId, doctorId, scheduleId);
 
                 // then
                 assertThat(result).isNotNull();
                 assertThat(result.getPatientId()).isEqualTo(patientId);
                 assertThat(result.getDoctorId()).isEqualTo(doctorId);
-                assertThat(result.getSlot()).isEqualTo(futureSlot);
-                verify(appointmentRepository).existsByDoctorIdAndSlot(doctorId, futureSlot);
+                assertThat(result.getScheduleId()).isEqualTo(scheduleId);
+                verify(appointmentRepository).existsByDoctorIdAndScheduleId(doctorId, scheduleId);
                 verify(appointmentRepository).save(any(Appointment.class));
         }
 
         @Test
         void bookAppointment_shouldThrowException_whenSlotAlreadyBooked() {
                 // given
-                given(appointmentRepository.existsByDoctorIdAndSlot(doctorId, futureSlot))
+                given(appointmentRepository.existsByDoctorIdAndScheduleId(doctorId, scheduleId))
                                 .willReturn(true);
 
                 // when / then
-                assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, futureSlot))
+                assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, scheduleId))
                                 .isInstanceOf(SlotAlreadyBookedException.class);
                 verify(appointmentRepository, never()).save(any());
-        }
-
-        @Test
-        void bookAppointment_shouldThrowException_whenSlotInPast() {
-                // given
-                LocalDateTime pastSlot = LocalDateTime.now().minusDays(1);
-
-                // when / then
-                assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, pastSlot))
-                                .isInstanceOf(SlotInPastException.class);
-        }
-
-        @Test
-        void bookAppointment_shouldThrowException_whenSlotIsToday_butAlreadyPassed() {
-                LocalDateTime pastSlotToday = LocalDateTime.now().minusHours(1);
-
-                assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, pastSlotToday))
-                                .isInstanceOf(SlotInPastException.class);
         }
 }

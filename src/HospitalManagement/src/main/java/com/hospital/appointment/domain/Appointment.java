@@ -16,8 +16,9 @@ public class Appointment {
     private UUID id;
     private UUID patientId;
     private UUID doctorId;
-    private LocalDateTime slot;
+    private UUID scheduleId;
     private AppointmentStatus status;
+    private String notes;
     private LocalDateTime createdAt;
     private Integer version;
 }
