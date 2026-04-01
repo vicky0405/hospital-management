@@ -9,8 +9,8 @@ import com.hospital.appointment.domain.Appointment;
 import com.hospital.appointment.domain.AppointmentRepository;
 import com.hospital.appointment.domain.AppointmentStatus;
 import com.hospital.appointment.domain.SlotAlreadyBookedException;
-import com.hospital.appointment.domain.SlotInPastException;
 
+@Service
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
@@ -19,17 +19,14 @@ public class AppointmentService {
         this.appointmentRepository = appointmentRepository;
     }
 
-    public Appointment bookAppointment(UUID patientId, UUID doctorId, LocalDateTime slot) {
-        if (slot.isBefore(LocalDateTime.now())) {
-            throw new SlotInPastException(slot);
-        }
-        if (appointmentRepository.existsByDoctorIdAndSlot(doctorId, slot)) {
-            throw new SlotAlreadyBookedException(doctorId, slot);
+    public Appointment bookAppointment(UUID patientId, UUID doctorId, UUID scheduleId) {
+        if (appointmentRepository.existsByDoctorIdAndScheduleId(doctorId, scheduleId)) {
+            throw new SlotAlreadyBookedException(doctorId, scheduleId);
         }
         Appointment appointment = Appointment.builder()
                 .patientId(patientId)
                 .doctorId(doctorId)
-                .slot(slot)
+                .scheduleId(scheduleId)
                 .status(AppointmentStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();
