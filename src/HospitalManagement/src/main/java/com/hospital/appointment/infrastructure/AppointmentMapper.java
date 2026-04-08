@@ -4,7 +4,6 @@ import com.hospital.appointment.domain.Appointment;
 import com.hospital.appointment.domain.AppointmentStatus;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 class AppointmentMapper {
 
@@ -13,11 +12,11 @@ class AppointmentMapper {
 
         static AppointmentJpaEntity toJpaEntity(Appointment appointment) {
                 return AppointmentJpaEntity.builder()
-                                .id(appointment.getId() != null ? appointment.getId() : UUID.randomUUID())
+                                .id(appointment.getId())
                                 .patientId(appointment.getPatientId())
                                 .doctorId(appointment.getDoctorId())
-                                .scheduleId(appointment.getScheduleId()) // ← đổi
-                                .notes(appointment.getNotes()) // ← thêm
+                                .scheduleId(appointment.getScheduleId())
+                                .notes(appointment.getNotes())
                                 .status(appointment.getStatus() != null
                                                 ? appointment.getStatus()
                                                 : AppointmentStatus.PENDING)
@@ -33,8 +32,8 @@ class AppointmentMapper {
                                 .id(entity.getId())
                                 .patientId(entity.getPatientId())
                                 .doctorId(entity.getDoctorId())
-                                .scheduleId(entity.getScheduleId()) // ← đổi
-                                .notes(entity.getNotes()) // ← thêm
+                                .scheduleId(entity.getScheduleId())
+                                .notes(entity.getNotes())
                                 .status(entity.getStatus())
                                 .version(entity.getVersion())
                                 .createdAt(entity.getCreatedAt())

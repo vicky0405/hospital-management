@@ -1,6 +1,5 @@
 package com.hospital.appointment.domain;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class SlotAlreadyBookedException extends RuntimeException {
