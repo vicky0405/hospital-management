@@ -3,31 +3,27 @@ package com.hospital.appointment.application;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hospital.appointment.application.AppointmentService;
 import com.hospital.appointment.domain.Appointment;
-import com.hospital.appointment.domain.AppointmentRepository;
 import com.hospital.appointment.domain.AppointmentStatus;
 import com.hospital.appointment.domain.SlotAlreadyBookedException;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AppointmentServiceTest {
 
         @Mock
-        private AppointmentRepository appointmentRepository;
+        private AppointmentBookingExecutor bookingExecutor;
 
         @InjectMocks
         private AppointmentService appointmentService;
@@ -46,9 +42,6 @@ class AppointmentServiceTest {
         @Test
         void bookAppointment_shouldSuccess_whenSlotAvailable() {
                 // given
-                given(appointmentRepository.existsByDoctorIdAndScheduleId(doctorId, scheduleId))
-                                .willReturn(false);
-
                 Appointment expected = Appointment.builder()
                                 .id(UUID.randomUUID())
                                 .patientId(patientId)
@@ -57,7 +50,7 @@ class AppointmentServiceTest {
                                 .status(AppointmentStatus.PENDING)
                                 .build();
 
-                given(appointmentRepository.save(any(Appointment.class)))
+                given(bookingExecutor.execute(patientId, doctorId, scheduleId))
                                 .willReturn(expected);
 
                 // when
@@ -68,19 +61,30 @@ class AppointmentServiceTest {
                 assertThat(result.getPatientId()).isEqualTo(patientId);
                 assertThat(result.getDoctorId()).isEqualTo(doctorId);
                 assertThat(result.getScheduleId()).isEqualTo(scheduleId);
-                verify(appointmentRepository).existsByDoctorIdAndScheduleId(doctorId, scheduleId);
-                verify(appointmentRepository).save(any(Appointment.class));
+                verify(bookingExecutor).execute(patientId, doctorId, scheduleId);
         }
 
         @Test
-        void bookAppointment_shouldThrowException_whenSlotAlreadyBooked() {
+        void bookAppointment_shouldThrowSlotAlreadyBookedException_whenExecutorThrowsDataIntegrityViolationException() {
                 // given
-                given(appointmentRepository.existsByDoctorIdAndScheduleId(doctorId, scheduleId))
-                                .willReturn(true);
+                given(bookingExecutor.execute(patientId, doctorId, scheduleId))
+                                .willThrow(new DataIntegrityViolationException("Unique constraint violation"));
 
                 // when / then
                 assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, scheduleId))
                                 .isInstanceOf(SlotAlreadyBookedException.class);
-                verify(appointmentRepository, never()).save(any());
+                verify(bookingExecutor).execute(patientId, doctorId, scheduleId);
+        }
+
+        @Test
+        void bookAppointment_shouldThrowSlotAlreadyBookedException_whenExecutorThrowsItDirectly() {
+                // given
+                given(bookingExecutor.execute(patientId, doctorId, scheduleId))
+                                .willThrow(new SlotAlreadyBookedException(doctorId, scheduleId));
+
+                // when / then
+                assertThatThrownBy(() -> appointmentService.bookAppointment(patientId, doctorId, scheduleId))
+                                .isInstanceOf(SlotAlreadyBookedException.class);
+                verify(bookingExecutor).execute(patientId, doctorId, scheduleId);
         }
 }

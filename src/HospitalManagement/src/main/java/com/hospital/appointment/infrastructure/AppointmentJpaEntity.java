@@ -50,7 +50,8 @@ public class AppointmentJpaEntity {
 
     @Version
     @Column(name = "version", nullable = false)
-    private Integer version;
+    @Builder.Default
+    private Integer version = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
