@@ -88,6 +88,26 @@ ADD CONSTRAINT uk_appointments_schedule_id UNIQUE (schedule_id);
 
 ## Những gì đã làm xong
 
+### Module: auth (domain + application + infrastructure + presentation)
+
+- [x] `Role` enum (ADMIN, DOCTOR, PATIENT)
+- [x] `User` domain entity
+- [x] `UserRepository` domain interface
+- [x] `EmailAlreadyExistsException`
+- [x] `JwtService` — generate/validate JWT, `@Value` for secret and expiry config
+- [x] `AuthService` — register (hardcode PATIENT role) / login
+- [x] `UserDetailsServiceImpl` — load user từ DB cho Spring Security
+- [x] `UserJpaEntity` — `@Builder.Default createdAt = LocalDateTime.now()`
+- [x] `UserJpaRepository` — package-private
+- [x] `UserMapper`, `UserRepositoryImpl`
+- [x] `RegisterRequest`, `LoginRequest`, `AuthResponseDto` (record types)
+- [x] `AuthController` — `POST /api/auth/register`, `POST /api/auth/login`
+- [x] `JwtAuthFilter` — `OncePerRequestFilter`, inject `UserDetailsService`
+- [x] `SecurityConfig` — stateless, JWT filter, `/error` permitAll
+- [x] `AuthExceptionHandler` — 409 EmailAlreadyExists, 401 BadCredentials
+- [x] Unit test: `JwtServiceTest`, `AuthServiceTest`
+- [x] Integration test: `AuthIntegrationTest` (Testcontainers, TestRestTemplate)
+
 ### Module: appointment (domain + application + infrastructure)
 
 - [x] `Appointment` domain entity (UUID id, patientId, doctorId, scheduleId, status, notes, createdAt, version)
@@ -150,6 +170,16 @@ private Integer version = 0;
 
 V1 không có unique constraint trên `appointments` — chỉ có FK constraints.
 V2 thêm `UNIQUE(schedule_id)` là constraint duy nhất trên appointments.
+
+### 6. Spring Security `/error` dispatch
+
+**Vấn đề:** Spring Boot forward 404 → `/error` như một internal error dispatch. `OncePerRequestFilter` không chạy lại cho error dispatch → `SecurityContext` bị clear → `/error` trả 401 thay vì 404.
+
+**Giải pháp:** Thêm `/error` vào `permitAll` trong `SecurityConfig`.
+
+```java
+.requestMatchers("/error").permitAll()
+```
 
 ---
 
@@ -234,21 +264,22 @@ Mọi API đều cần authenticate. Làm Controller trước khi có Auth thì 
 
 ## Bước tiếp theo ngay bây giờ
 
-**Module Auth — `feature/auth-module`:**
+**Appointment presentation layer — `feature/appointment-presentation`:**
 
-- Tạo branch `feature/auth-module` trước khi làm bất cứ thứ gì
-- Làm theo TDD: test trước, implement sau
-- Spring Security + JWT + Refresh Token
-- 3 roles: ADMIN / DOCTOR / PATIENT
-- `UserDetailsService` load user từ DB
-- Sau khi xong Auth mới làm presentation layer cho appointment
+- Tạo branch `feature/appointment-presentation`
+- `AppointmentController`: `POST /api/appointments`, `GET /api/appointments/{id}`
+- `AppointmentRequestDto`, `AppointmentResponseDto`
+- `@PreAuthorize("hasRole('PATIENT')")` cho booking
+- `@PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN')")` cho xem lịch
+- Global exception handler cho toàn bộ hệ thống (thay `AuthExceptionHandler` scope nhỏ)
+- Làm theo TDD: test trước với `MockMvc`
 
 ---
 
 ## Bước tiếp theo (theo thứ tự)
 
-1. **Module: auth** — Spring Security, JWT, Refresh Token, 3 roles ← đang làm
-2. **Appointment presentation** — Controller, DTO, `@PreAuthorize` đúng role
+1. **Appointment presentation** — Controller, DTO, `@PreAuthorize` đúng role ← đang làm
+2. **DoctorSchedule module** — CRUD lịch làm việc bác sĩ, validate slot trước booking
 3. **Module: EMR** — hồ sơ bệnh án, append-only, versioning, không cho xoá
 4. **Module: pharmacy** — kê đơn thuốc, kiểm tra tồn kho, concurrent inventory lock
 5. **Module: billing** — viện phí, BHYT giả lập, transaction rollback
@@ -260,8 +291,11 @@ Mọi API đều cần authenticate. Làm Controller trước khi có Auth thì 
 
 ## Pending items
 
-- [ ] `AppointmentController` và `AppointmentDTO` — làm sau khi xong Auth
+- [ ] `AppointmentController`, `AppointmentRequestDto`, `AppointmentResponseDto` — làm tiếp theo
 - [ ] `DoctorScheduleService` — validate slot còn hợp lệ trước khi booking
+- [ ] `GlobalExceptionHandler` — thay `AuthExceptionHandler` bằng handler scope toàn hệ thống
+- [x] Auth module — Spring Security + JWT + 3 roles — done
+- [x] V3 migration — bảng users — done
 - [x] Fix `@Builder.Default` trên `AppointmentJpaEntity.version` — done
 - [x] `spring.jpa.open-in-view=false` — done
 - [x] V2 migration conflict — không có conflict, đã xác nhận
