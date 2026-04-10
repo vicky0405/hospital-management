@@ -104,7 +104,7 @@ ADD CONSTRAINT uk_appointments_schedule_id UNIQUE (schedule_id);
 - [x] `AuthController` — `POST /api/auth/register`, `POST /api/auth/login`
 - [x] `JwtAuthFilter` — `OncePerRequestFilter`, inject `UserDetailsService`
 - [x] `SecurityConfig` — stateless, JWT filter, `/error` permitAll
-- [x] `AuthExceptionHandler` — 409 EmailAlreadyExists, 401 BadCredentials
+- [x] `AuthExceptionHandler` — 409 EmailAlreadyExists, 401 BadCredentials (replaced by GlobalExceptionHandler)
 - [x] Unit test: `JwtServiceTest`, `AuthServiceTest`
 - [x] Integration test: `AuthIntegrationTest` (Testcontainers, TestRestTemplate)
 
@@ -122,6 +122,15 @@ ADD CONSTRAINT uk_appointments_schedule_id UNIQUE (schedule_id);
 - [x] `AppointmentMapper` — convert domain ↔ JPA entity
 - [x] Unit test: `AppointmentServiceTest` (mock `AppointmentBookingExecutor`)
 - [x] Integration test: `AppointmentConcurrentBookingTest` (Testcontainers, 2 threads cùng book)
+
+### Module: appointment (presentation)
+
+- [x] `AppointmentRequestDto`, `AppointmentResponseDto` (record types)
+- [x] `AppointmentController` — `POST /api/appointments`, `GET /api/appointments/{id}`
+- [x] `@PreAuthorize("hasRole('PATIENT')")` for booking
+- [x] `GlobalExceptionHandler` — replaces `AuthExceptionHandler`, covers all modules
+- [x] `AppointmentNotFoundException`
+- [x] Integration test: `AppointmentControllerIntegrationTest` (MockMvc + `@WithMockUser`)
 
 ### Quy trình
 
@@ -264,36 +273,34 @@ Mọi API đều cần authenticate. Làm Controller trước khi có Auth thì 
 
 ## Bước tiếp theo ngay bây giờ
 
-**Appointment presentation layer — `feature/appointment-presentation`:**
+**DoctorSchedule module — `feature/doctor-schedule`:**
 
-- Tạo branch `feature/appointment-presentation`
-- `AppointmentController`: `POST /api/appointments`, `GET /api/appointments/{id}`
-- `AppointmentRequestDto`, `AppointmentResponseDto`
-- `@PreAuthorize("hasRole('PATIENT')")` cho booking
-- `@PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN')")` cho xem lịch
-- Global exception handler cho toàn bộ hệ thống (thay `AuthExceptionHandler` scope nhỏ)
-- Làm theo TDD: test trước với `MockMvc`
+- Tạo branch `feature/doctor-schedule`
+- CRUD lịch làm việc bác sĩ
+- `GET /api/doctors/{doctorId}/schedules` — xem lịch còn trống
+- `POST /api/doctors/{doctorId}/schedules` — ADMIN/DOCTOR tạo lịch
+- `DoctorScheduleService` validate slot còn hợp lệ trước khi booking
+- Làm theo TDD
 
 ---
 
 ## Bước tiếp theo (theo thứ tự)
 
-1. **Appointment presentation** — Controller, DTO, `@PreAuthorize` đúng role ← đang làm
-2. **DoctorSchedule module** — CRUD lịch làm việc bác sĩ, validate slot trước booking
-3. **Module: EMR** — hồ sơ bệnh án, append-only, versioning, không cho xoá
-4. **Module: pharmacy** — kê đơn thuốc, kiểm tra tồn kho, concurrent inventory lock
-5. **Module: billing** — viện phí, BHYT giả lập, transaction rollback
-6. **Kafka** — notification async: `appointment.booked` → email xác nhận, nhắc lịch 24h trước
-7. **Deploy** — Railway free tier, Docker Compose production config
-8. **README + Postman collection + Swagger**
+1. **DoctorSchedule module** — CRUD lịch làm việc bác sĩ, validate slot trước booking ← đang làm
+2. **Module: EMR** — hồ sơ bệnh án, append-only, versioning, không cho xoá
+3. **Module: pharmacy** — kê đơn thuốc, kiểm tra tồn kho, concurrent inventory lock
+4. **Module: billing** — viện phí, BHYT giả lập, transaction rollback
+5. **Kafka** — notification async: `appointment.booked` → email xác nhận, nhắc lịch 24h trước
+6. **Deploy** — Railway free tier, Docker Compose production config
+7. **README + Postman collection + Swagger**
 
 ---
 
 ## Pending items
 
-- [ ] `AppointmentController`, `AppointmentRequestDto`, `AppointmentResponseDto` — làm tiếp theo
 - [ ] `DoctorScheduleService` — validate slot còn hợp lệ trước khi booking
-- [ ] `GlobalExceptionHandler` — thay `AuthExceptionHandler` bằng handler scope toàn hệ thống
+- [x] `AppointmentController`, `AppointmentRequestDto`, `AppointmentResponseDto` — done
+- [x] `GlobalExceptionHandler` — done
 - [x] Auth module — Spring Security + JWT + 3 roles — done
 - [x] V3 migration — bảng users — done
 - [x] Fix `@Builder.Default` trên `AppointmentJpaEntity.version` — done
