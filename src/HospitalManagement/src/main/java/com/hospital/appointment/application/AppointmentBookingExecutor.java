@@ -21,7 +21,7 @@ class AppointmentBookingExecutor {
     }
 
     @Transactional
-    Appointment execute(UUID patientId, UUID doctorId, UUID scheduleId) {
+    Appointment execute(UUID patientId, UUID doctorId, UUID scheduleId, String notes) {
         if (appointmentRepository.existsByDoctorIdAndScheduleId(doctorId, scheduleId)) {
             throw new SlotAlreadyBookedException(doctorId, scheduleId);
         }
@@ -31,6 +31,7 @@ class AppointmentBookingExecutor {
                 .doctorId(doctorId)
                 .scheduleId(scheduleId)
                 .status(AppointmentStatus.PENDING)
+                .notes(notes)
                 .createdAt(LocalDateTime.now())
                 .build();
 

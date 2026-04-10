@@ -96,7 +96,7 @@ class AppointmentConcurrentBookingTest {
 
             try {
                 startLatch.await();
-                appointmentService.bookAppointment(patientId, doctorId, scheduleId);
+                appointmentService.bookAppointment(patientId, doctorId, scheduleId, null);
                 successCount.incrementAndGet();
             } catch (SlotAlreadyBookedException ex) {
                 failureCount.incrementAndGet();
